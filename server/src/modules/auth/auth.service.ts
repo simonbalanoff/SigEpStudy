@@ -54,23 +54,39 @@ export async function createSession(
     return token;
 }
 
-export function setSessionCookie(response: Response, token: string): void {
+export function setSessionCookie(
+    response: Response,
+    token: string,
+): void {
+    const isProduction =
+        env.NODE_ENV === "production";
+
     response.cookie("session", token, {
         signed: true,
         httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: env.SESSION_DAYS * 24 * 60 * 60 * 1000,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge:
+            env.SESSION_DAYS *
+            24 *
+            60 *
+            60 *
+            1000,
         path: "/",
     });
 }
 
-export function clearSessionCookie(response: Response): void {
+export function clearSessionCookie(
+    response: Response,
+): void {
+    const isProduction =
+        env.NODE_ENV === "production";
+
     response.clearCookie("session", {
         signed: true,
         httpOnly: true,
-        secure: env.NODE_ENV === "production",
-        sameSite: "lax",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
         path: "/",
     });
 }
