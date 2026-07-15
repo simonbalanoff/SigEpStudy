@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 80" role="img" aria-label="Colorado Gamma Study Bank">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#64286f"/>
+      <stop offset="1" stop-color="#35123f"/>
+    </linearGradient>
+  </defs>
+  <path d="M36 2 67 13v25c0 19-12 32-31 40C17 70 5 57 5 38V13L36 2Z" fill="url(#g)"/>
+  <path d="M36 8 61 17v21c0 15-9 26-25 34-16-8-25-19-25-34V17L36 8Z" fill="none" stroke="#d5ad4a" stroke-width="2"/>
+  <path d="M22 25h28v7H30v8h17v7H30v15h-8V25Z" fill="#fff"/>
+  <path d="M49 53h8v9h-8z" fill="#b41f38"/>
+</svg>
