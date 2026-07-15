@@ -1,17 +1,27 @@
 import type { RequestHandler } from "express";
 
-import { env } from "../config/env.js";
+import { isAllowedOrigin } from "../config/cors.js";
 import { AppError } from "../utils/app-error.js";
 
-const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const SAFE_METHODS = new Set([
+    "GET",
+    "HEAD",
+    "OPTIONS",
+]);
 
-export const originGuard: RequestHandler = (request, _response, next) => {
+export const originGuard: RequestHandler = (
+    request,
+    _response,
+    next,
+) => {
     if (SAFE_METHODS.has(request.method)) {
         next();
         return;
     }
 
-    const hasSessionCookie = Boolean(request.signedCookies.session);
+    const hasSessionCookie = Boolean(
+        request.signedCookies.session,
+    );
 
     if (!hasSessionCookie) {
         next();
@@ -20,7 +30,7 @@ export const originGuard: RequestHandler = (request, _response, next) => {
 
     const origin = request.get("origin");
 
-    if (origin !== env.CLIENT_ORIGIN) {
+    if (!isAllowedOrigin(origin)) {
         throw new AppError(
             403,
             "INVALID_ORIGIN",

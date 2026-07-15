@@ -9,6 +9,7 @@ import { errorHandler } from "./middleware/error-handler.js";
 import { notFound } from "./middleware/not-found.js";
 import { originGuard } from "./middleware/origin-guard.js";
 import { apiRouter } from "./routes/index.js";
+import { isAllowedOrigin } from "./config/cors.js";
 
 export const app = express();
 
@@ -18,7 +19,14 @@ app.disable("x-powered-by");
 app.use(helmet());
 app.use(
     cors({
-        origin: env.CLIENT_ORIGIN,
+        origin(origin, callback) {
+            if (isAllowedOrigin(origin)) {
+                callback(null, true);
+                return;
+            }
+
+            callback(new Error("Origin is not allowed by CORS."));
+        },
         credentials: true,
     }),
 );
