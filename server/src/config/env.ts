@@ -8,7 +8,15 @@ const schema = z.object({
         .default("development"),
     PORT: z.coerce.number().int().positive().default(4000),
     MONGODB_URI: z.string().min(1),
-    CLIENT_ORIGIN: z.string().url(),
+    CLIENT_ORIGINS: z
+    .string()
+    .min(1)
+    .transform((value) =>
+        value
+            .split(",")
+            .map((origin) => origin.trim())
+            .filter(Boolean),
+    ),
     COOKIE_SECRET: z.string().min(32),
     SESSION_DAYS: z.coerce.number().int().positive().default(30),
     UPLOAD_DIR: z.string().default("uploads"),
