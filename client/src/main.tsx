@@ -9,27 +9,27 @@ import { AuthProvider } from "./context/AuthContext";
 import "./styles.css";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-      refetchOnWindowFocus: false
+    defaultOptions: {
+        queries: {
+            staleTime: 30_000,
+            retry: 1,
+            refetchOnWindowFocus: false,
+        },
+        mutations: {
+            retry: 0,
+        },
     },
-    mutations: {
-      retry: 0
-    }
-  }
 });
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-          <Toaster position="top-right" richColors closeButton />
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </React.StrictMode>
+    <React.StrictMode>
+        <QueryClientProvider client={queryClient}>
+            <BrowserRouter>
+                <AuthProvider>
+                    <App />
+                    <Toaster position="top-right" richColors closeButton />
+                </AuthProvider>
+            </BrowserRouter>
+        </QueryClientProvider>
+    </React.StrictMode>,
 );

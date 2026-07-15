@@ -3,14 +3,14 @@ import { Router } from "express";
 import { requireAuth } from "../../middleware/auth.js";
 import { authorize } from "../../middleware/authorize.js";
 import {
-  createReport,
-  listAuditEvents,
-  listModerationProfessors,
-  listModerationResources,
-  listReports,
-  moderateProfessor,
-  moderateResource,
-  resolveReport
+    createReport,
+    listAuditEvents,
+    listModerationProfessors,
+    listModerationResources,
+    listReports,
+    moderateProfessor,
+    moderateResource,
+    resolveReport,
 } from "./moderation.controller.js";
 
 export const reportRouter = Router();

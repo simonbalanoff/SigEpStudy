@@ -2,11 +2,11 @@ import { Router } from "express";
 
 import { requireAuth } from "../../middleware/auth.js";
 import {
-  createCourseProfessor,
-  getCourse,
-  listCourseProfessors,
-  searchCourses,
-  searchProfessors
+    createCourseProfessor,
+    getCourse,
+    listCourseProfessors,
+    searchCourses,
+    searchProfessors,
 } from "./course.controller.js";
 
 export const courseRouter = Router();

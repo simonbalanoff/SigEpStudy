@@ -1965,7 +1965,7 @@ textarea:focus-visible {
     height: 19px;
   }
 
-  
+
 
   .library-filters {
     grid-template-columns: minmax(210px, 1.35fr) repeat(3, minmax(130px, 0.8fr));
@@ -2253,15 +2253,15 @@ textarea:focus-visible {
     margin-top: 30px;
   }
 
-  
 
-  
 
-  
 
-  
 
-  
+
+
+
+
+
 
   .library-controls {
     grid-template-columns: 1fr;
@@ -2445,29 +2445,29 @@ textarea:focus-visible {
     width: 100%;
   }
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
 
-  
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2808,53 +2808,9 @@ textarea:focus-visible {
 
 
 
-@media (max-width: 900px) {
-  
-}
+@media (max-width: 900px) {}
 
-@media (max-width: 680px) {
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-}
+@media (max-width: 680px) {}
 
 .resource-grid {
   display: grid;
@@ -2893,12 +2849,10 @@ textarea:focus-visible {
   left: 24px;
   height: 2px;
   border-radius: 0 0 999px 999px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(96 40 110 / 48%),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgb(96 40 110 / 48%),
+      transparent);
   opacity: 0;
   pointer-events: none;
   transition: opacity 160ms ease;
@@ -3060,7 +3014,7 @@ textarea:focus-visible {
   line-clamp: 2;
 }
 
-.resource-card-body > p {
+.resource-card-body>p {
   min-height: 40px;
   margin-top: 8px;
   display: -webkit-box;
@@ -3223,7 +3177,7 @@ textarea:focus-visible {
   line-clamp: 1;
 }
 
-.resource-card.compact .resource-card-body > p,
+.resource-card.compact .resource-card-body>p,
 .resource-card.compact .topic-row {
   display: none;
 }
@@ -3286,7 +3240,7 @@ textarea:focus-visible {
     font-size: 16px;
   }
 
-  .resource-card-body > p {
+  .resource-card-body>p {
     min-height: 36px;
     font-size: 12px;
   }

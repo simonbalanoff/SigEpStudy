@@ -87,9 +87,7 @@ export const register: RequestHandler = async (request, response) => {
     response.status(201).json({
         user: serializeUser(user),
         sessionToken:
-            request.get("x-client-type") === "native"
-                ? token
-                : undefined,
+            request.get("x-client-type") === "native" ? token : undefined,
     });
 };
 
@@ -167,11 +165,9 @@ export const forgotPassword: RequestHandler = async (request, response) => {
         });
         await sendPasswordResetEmail(user.email, token);
     }
-    response
-        .status(202)
-        .json({
-            message: "If the account exists, a reset link has been sent.",
-        });
+    response.status(202).json({
+        message: "If the account exists, a reset link has been sent.",
+    });
 };
 
 export const resetPassword: RequestHandler = async (request, response) => {
