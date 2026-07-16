@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/brand/crest.svg" alt="Colorado Gamma crest" width="88" />
-
+  <img src="docs/brand/crest.png" alt="Colorado Gamma crest" width="88" />
+  
   # Colorado Gamma Study Bank
 
   An invite-only academic resource platform for Sigma Phi Epsilon's Colorado Gamma chapter.
@@ -94,99 +94,6 @@ The frontend is deployed on Vercel, the API is hosted on Render, MongoDB Atlas s
 | Database | MongoDB Atlas, Mongoose |
 | File storage | Cloudflare R2 |
 | Deployment | Vercel, Render |
-
-## Project structure
-
-```text
-SigEpStudy/
-├── client/                 React frontend
-│   ├── public/
-│   └── src/
-├── server/                 Express API
-│   └── src/
-│       ├── config/
-│       ├── middleware/
-│       ├── modules/
-│       ├── scripts/
-│       └── services/
-└── docs/
-    ├── brand/
-    └── screenshots/
-```
-
-## Local development
-
-### Prerequisites
-
-- Node.js 22 or newer
-- MongoDB database
-- Cloudflare R2 bucket and API credentials
-
-### Install dependencies
-
-```bash
-git clone https://github.com/simonbalanoff/SigEpStudy.git
-cd SigEpStudy
-
-cd server
-npm install
-
-cd ../client
-npm install
-```
-
-### Configure the server
-
-Create `server/.env`:
-
-```env
-NODE_ENV=development
-PORT=4000
-
-MONGODB_URI=
-CLIENT_ORIGINS=http://localhost:5173
-COOKIE_SECRET=
-SESSION_DAYS=30
-
-APP_URL=http://localhost:5173
-MAX_UPLOAD_MB=25
-
-R2_ACCOUNT_ID=
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
-
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
-```
-
-Create `client/.env`:
-
-```env
-VITE_API_URL=http://localhost:4000/api/v1
-```
-
-### Run the application
-
-In one terminal:
-
-```bash
-cd server
-npm run dev
-```
-
-In another terminal:
-
-```bash
-cd client
-npm run dev
-```
-
-The client will be available at `http://localhost:5173`.
 
 ## Access model
 
