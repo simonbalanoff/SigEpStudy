@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="docs/brand/crest.svg" alt="Colorado Gamma crest" width="88" />
-
+  <img src="docs/brand/crest.png" alt="Colorado Gamma crest" width="88" />
+  
   # Colorado Gamma Study Bank
 
   An invite-only academic resource platform for Sigma Phi Epsilon's Colorado Gamma chapter.
