@@ -148,10 +148,15 @@ async function signedRequest(input: {
         `AWS4-HMAC-SHA256 Credential=${env.R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
     );
 
+    const requestBody =
+        input.body === undefined
+            ? undefined
+            : Uint8Array.from(input.body).buffer;
+
     return fetch(url, {
         method: input.method,
         headers,
-        body: input.body,
+        body: requestBody,
     });
 }
 
@@ -162,8 +167,9 @@ function buildObjectPath(key: string): string {
 }
 
 function encodePathSegment(value: string): string {
-    return encodeURIComponent(value).replace(/[!'()*]/g, (character) =>
-        `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+    return encodeURIComponent(value).replace(
+        /[!'()*]/g,
+        (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
     );
 }
 
