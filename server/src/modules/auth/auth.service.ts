@@ -65,7 +65,7 @@ export function setSessionCookie(
         signed: true,
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? "none" : "lax",
+        sameSite: "lax",
         maxAge:
             env.SESSION_DAYS *
             24 *
@@ -86,7 +86,7 @@ export function clearSessionCookie(
         signed: true,
         httpOnly: true,
         secure: isProduction,
-        sameSite: isProduction ? "none" : "lax",
+        sameSite: "lax",
         path: "/",
     });
 }
