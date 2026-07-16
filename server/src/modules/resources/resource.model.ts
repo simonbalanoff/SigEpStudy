@@ -14,6 +14,8 @@ export interface IResource {
     searchText: string;
     storageKind: "file" | "external";
     originalFileName?: string;
+    fileObjectKey?: string;
+    previewObjectKey?: string;
     storedFileName?: string;
     mimeType?: string;
     sizeBytes?: number;
@@ -70,11 +72,10 @@ const resourceSchema = new Schema<IResource>(
             required: true,
         },
         originalFileName: { type: String, maxlength: 500 },
-        storedFileName: { type: String, maxlength: 500 },
-        previewFileName: {
-            type: String,
-            maxlength: 500,
-        },
+        fileObjectKey: { type: String, maxlength: 1024, select: false },
+        previewObjectKey: { type: String, maxlength: 1024, select: false },
+        storedFileName: { type: String, maxlength: 500, select: false },
+        previewFileName: { type: String, maxlength: 500, select: false },
         mimeType: { type: String, maxlength: 200 },
         sizeBytes: { type: Number, min: 0 },
         externalUrl: { type: String, maxlength: 2000 },

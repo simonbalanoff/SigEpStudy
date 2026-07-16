@@ -1,13 +1,17 @@
-import { unlink, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { pdf } from "pdf-to-img";
+import { randomUUID } from "node:crypto";
+import { pipeline } from "node:stream/promises";
 
 import type { RequestHandler } from "express";
 import type { HydratedDocument, Types } from "mongoose";
 
-import { env } from "../../config/env.js";
 import { Course, type ICourse } from "../courses/course.model.js";
 import { Professor } from "../courses/professor.model.js";
+import {
+    deleteObjects,
+    getObject,
+    uploadObject,
+} from "../../services/object-storage.js";
+import { generatePdfPreview } from "../../services/pdf-preview.js";
 import { AppError } from "../../utils/app-error.js";
 import { requireObjectId } from "../../utils/object-id.js";
 import { routeParam } from "../../utils/route-param.js";
@@ -30,9 +34,10 @@ function cleanResource(
 ): Record<string, unknown> {
     const object = resource.toObject() as unknown as Record<string, unknown>;
 
-    const hasPreview =
-        object.storageKind === "file" && Boolean(object.storedFileName);
+    const hasPreview = object.storageKind === "file";
 
+    delete object.fileObjectKey;
+    delete object.previewObjectKey;
     delete object.storedFileName;
     delete object.previewFileName;
 
@@ -40,23 +45,6 @@ function cleanResource(
         ...object,
         hasPreview,
     };
-}
-
-async function generateResourcePreview(
-    storedFileName: string,
-    previewFileName: string,
-): Promise<void> {
-    const document = await pdf(join(env.UPLOAD_DIR, storedFileName), {
-        scale: 1.5,
-    });
-
-    try {
-        const firstPage = await document.getPage(1);
-
-        await writeFile(join(env.UPLOAD_DIR, previewFileName), firstPage);
-    } finally {
-        await document.destroy();
-    }
 }
 
 async function addSavedState(
@@ -151,12 +139,17 @@ function canViewUnapproved(
 
 export const createResource: RequestHandler = async (request, response) => {
     const user = request.auth?.user;
-    if (!user)
+
+    if (!user) {
         throw new AppError(
             401,
             "AUTHENTICATION_REQUIRED",
             "You must sign in to continue.",
         );
+    }
+
+    const uploadedObjectKeys: string[] = [];
+
     try {
         const input = createResourceSchema.parse(request.body);
         const relations = await verifyRelations({
@@ -164,20 +157,52 @@ export const createResource: RequestHandler = async (request, response) => {
             professorId: input.professorId,
         });
         const isExternal = input.resourceType === "external_link";
-        if (isExternal && !input.externalUrl)
+
+        if (isExternal && !input.externalUrl) {
             throw new AppError(
                 400,
                 "EXTERNAL_URL_REQUIRED",
                 "An external link is required for this resource type.",
             );
-        if (!isExternal && !request.file)
+        }
+
+        if (!isExternal && !request.file) {
             throw new AppError(400, "PDF_REQUIRED", "A PDF file is required.");
-        if (isExternal && request.file)
+        }
+
+        if (isExternal && request.file) {
             throw new AppError(
                 400,
                 "UNEXPECTED_FILE",
                 "External-link resources cannot include a PDF upload.",
             );
+        }
+
+        let fileObjectKey: string | undefined;
+        let previewObjectKey: string | undefined;
+
+        if (request.file) {
+            const objectDirectory = `resources/${randomUUID()}`;
+            fileObjectKey = `${objectDirectory}/document.pdf`;
+            previewObjectKey = `${objectDirectory}/preview.png`;
+
+            const preview = await generatePdfPreview(request.file.buffer);
+            uploadedObjectKeys.push(fileObjectKey, previewObjectKey);
+
+            await Promise.all([
+                uploadObject({
+                    key: fileObjectKey,
+                    body: request.file.buffer,
+                    contentType: "application/pdf",
+                }),
+                uploadObject({
+                    key: previewObjectKey,
+                    body: preview,
+                    contentType: "image/png",
+                }),
+            ]);
+        }
+
         const topics = [...new Set(input.topics.map((topic) => topic.trim()))];
         const resource = await Resource.create({
             courseId: relations.course._id,
@@ -197,17 +222,24 @@ export const createResource: RequestHandler = async (request, response) => {
             }),
             storageKind: isExternal ? "external" : "file",
             originalFileName: request.file?.originalname,
-            storedFileName: request.file?.filename,
+            fileObjectKey,
+            previewObjectKey,
             mimeType: request.file?.mimetype,
             sizeBytes: request.file?.size,
             externalUrl: input.externalUrl,
             status: "pending",
             helpfulCount: 0,
         });
+
         response.status(201).json({ resource: cleanResource(resource) });
     } catch (error) {
-        if (request.file)
-            await unlink(request.file.path).catch(() => undefined);
+        await deleteObjects(uploadedObjectKeys).catch((cleanupError) => {
+            console.error("Failed to clean up R2 objects after upload error.", {
+                uploadedObjectKeys,
+                cleanupError,
+            });
+        });
+
         throw error;
     }
 };
@@ -262,7 +294,6 @@ export const listResources: RequestHandler = async (request, response) => {
 
     const [resourceDocuments, total] = await Promise.all([
         Resource.find(filter)
-            .select("-storedFileName")
             .populate("courseId", "displayCode title")
             .populate("professorId", "displayName")
             .populate("uploaderId", "firstName lastName")
@@ -299,7 +330,6 @@ export const listMyResources: RequestHandler = async (request, response) => {
     const resourceDocuments = await Resource.find({
         uploaderId: user._id,
     })
-        .select("-storedFileName")
         .populate("courseId", "displayCode title")
         .populate("professorId", "displayName")
         .sort({ createdAt: -1 });
@@ -354,38 +384,69 @@ export const getResource: RequestHandler = async (request, response) => {
 
 export const openResourceFile: RequestHandler = async (request, response) => {
     const user = request.auth?.user;
-    if (!user)
+
+    if (!user) {
         throw new AppError(
             401,
             "AUTHENTICATION_REQUIRED",
             "You must sign in to continue.",
         );
+    }
+
     const resourceId = requireObjectId(
         routeParam(request.params.resourceId, "resourceId"),
         "resourceId",
     );
-    const resource = await Resource.findById(resourceId);
+    const resource = await Resource.findById(resourceId).select(
+        "+fileObjectKey +previewObjectKey",
+    );
+
     if (
         !resource ||
         (resource.status !== "approved" && !canViewUnapproved(resource, user))
-    )
+    ) {
         throw new AppError(
             404,
             "RESOURCE_NOT_FOUND",
             "The resource could not be found.",
         );
-    if (resource.storageKind !== "file" || !resource.storedFileName)
+    }
+
+    if (resource.storageKind !== "file" || !resource.fileObjectKey) {
         throw new AppError(
-            400,
-            "NO_FILE",
-            "This resource does not contain a file.",
+            404,
+            "RESOURCE_FILE_NOT_FOUND",
+            "The uploaded PDF is not available in object storage.",
         );
-    response.setHeader("Content-Type", resource.mimeType ?? "application/pdf");
+    }
+
+    const object = await getObject(resource.fileObjectKey);
+
+    if (!object) {
+        throw new AppError(
+            404,
+            "RESOURCE_FILE_NOT_FOUND",
+            "The uploaded PDF could not be found.",
+        );
+    }
+
+    response.setHeader(
+        "Content-Type",
+        object.contentType ?? resource.mimeType ?? "application/pdf",
+    );
     response.setHeader(
         "Content-Disposition",
-        `inline; filename="${encodeURIComponent(resource.originalFileName ?? "resource.pdf")}"`,
+        `inline; filename*=UTF-8''${encodeURIComponent(
+            resource.originalFileName ?? "resource.pdf",
+        )}`,
     );
-    response.sendFile(resource.storedFileName, { root: env.UPLOAD_DIR });
+    response.setHeader("Cache-Control", "private, max-age=3600");
+
+    if (object.contentLength !== undefined) {
+        response.setHeader("Content-Length", String(object.contentLength));
+    }
+
+    await pipeline(object.body, response);
 };
 
 export const openResourcePreview: RequestHandler = async (
@@ -406,8 +467,9 @@ export const openResourcePreview: RequestHandler = async (
         routeParam(request.params.resourceId, "resourceId"),
         "resourceId",
     );
-
-    const resource = await Resource.findById(resourceId);
+    const resource = await Resource.findById(resourceId).select(
+        "+fileObjectKey +previewObjectKey",
+    );
 
     if (
         !resource ||
@@ -420,47 +482,32 @@ export const openResourcePreview: RequestHandler = async (
         );
     }
 
-    if (resource.storageKind !== "file" || !resource.storedFileName) {
+    if (resource.storageKind !== "file" || !resource.previewObjectKey) {
         throw new AppError(
             404,
             "PREVIEW_NOT_FOUND",
-            "This resource does not have a preview.",
+            "This resource does not have a stored preview.",
         );
     }
 
-    let previewFileName = resource.previewFileName;
+    const object = await getObject(resource.previewObjectKey);
 
-    if (!previewFileName) {
-        previewFileName = `${resource.storedFileName}.preview.png`;
-
-        try {
-            await generateResourcePreview(
-                resource.storedFileName,
-                previewFileName,
-            );
-        } catch {
-            await unlink(join(env.UPLOAD_DIR, previewFileName)).catch(
-                () => undefined,
-            );
-
-            throw new AppError(
-                500,
-                "PREVIEW_GENERATION_FAILED",
-                "The resource preview could not be generated.",
-            );
-        }
-
-        resource.previewFileName = previewFileName;
-
-        await resource.save();
+    if (!object) {
+        throw new AppError(
+            404,
+            "PREVIEW_NOT_FOUND",
+            "The resource preview could not be found.",
+        );
     }
 
-    response.setHeader("Content-Type", "image/png");
+    response.setHeader("Content-Type", object.contentType ?? "image/png");
     response.setHeader("Cache-Control", "private, max-age=86400");
 
-    response.sendFile(previewFileName, {
-        root: env.UPLOAD_DIR,
-    });
+    if (object.contentLength !== undefined) {
+        response.setHeader("Content-Length", String(object.contentLength));
+    }
+
+    await pipeline(object.body, response);
 };
 
 export const updateResource: RequestHandler = async (request, response) => {
@@ -580,7 +627,9 @@ export const deleteResource: RequestHandler = async (request, response) => {
         routeParam(request.params.resourceId, "resourceId"),
         "resourceId",
     );
-    const resource = await Resource.findById(resourceId);
+    const resource = await Resource.findById(resourceId).select(
+        "+fileObjectKey +previewObjectKey",
+    );
     if (!resource)
         throw new AppError(
             404,
@@ -610,16 +659,19 @@ export const deleteResource: RequestHandler = async (request, response) => {
         SavedResource.deleteMany({ resourceId: resource._id }),
         HelpfulResource.deleteMany({ resourceId: resource._id }),
     ]);
-    const resourceFiles = [
-        resource.storedFileName,
-        resource.previewFileName,
-    ].filter((fileName): fileName is string => Boolean(fileName));
+    const objectKeys = [
+        resource.fileObjectKey,
+        resource.previewObjectKey,
+    ].filter((key): key is string => Boolean(key));
 
-    await Promise.all(
-        resourceFiles.map((fileName) =>
-            unlink(join(env.UPLOAD_DIR, fileName)).catch(() => undefined),
-        ),
-    );
+    await deleteObjects(objectKeys).catch((error) => {
+        console.error("Failed to delete R2 objects for resource.", {
+            resourceId: String(resource._id),
+            objectKeys,
+            error,
+        });
+    });
+
     response.status(204).send();
 };
 
@@ -690,7 +742,6 @@ export const listSavedResources: RequestHandler = async (request, response) => {
         },
         status: "approved",
     })
-        .select("-storedFileName")
         .populate("courseId", "displayCode title")
         .populate("professorId", "displayName");
 

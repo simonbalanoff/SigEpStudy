@@ -12,7 +12,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/scripts/seed.ts",
-    "import:courses": "tsx src/scripts/import-courses.ts"
+    "import:courses": "tsx src/scripts/import-courses.ts",
+    "migrate:r2": "tsx src/scripts/migrate-local-files-to-r2.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

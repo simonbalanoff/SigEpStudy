@@ -9,19 +9,23 @@ const schema = z.object({
     PORT: z.coerce.number().int().positive().default(4000),
     MONGODB_URI: z.string().min(1),
     CLIENT_ORIGINS: z
-    .string()
-    .min(1)
-    .transform((value) =>
-        value
-            .split(",")
-            .map((origin) => origin.trim())
-            .filter(Boolean),
-    ),
+        .string()
+        .min(1)
+        .transform((value) =>
+            value
+                .split(",")
+                .map((origin) => origin.trim())
+                .filter(Boolean),
+        ),
     COOKIE_SECRET: z.string().min(32),
     SESSION_DAYS: z.coerce.number().int().positive().default(30),
-    UPLOAD_DIR: z.string().default("uploads"),
     MAX_UPLOAD_MB: z.coerce.number().positive().default(25),
     APP_URL: z.string().url(),
+    R2_ACCOUNT_ID: z.string().min(1),
+    R2_ACCESS_KEY_ID: z.string().min(1),
+    R2_SECRET_ACCESS_KEY: z.string().min(1),
+    R2_BUCKET_NAME: z.string().min(1),
+    UPLOAD_DIR: z.string().default("uploads"),
     SMTP_HOST: z.string().optional().default(""),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_SECURE: z
